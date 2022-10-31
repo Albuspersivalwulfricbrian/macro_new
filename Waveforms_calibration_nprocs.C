@@ -31,6 +31,8 @@ const Int_t Intermediate_gate = 200;
 ///////////////////////Define fit constants range
 Int_t l_integr_NaI = 30000;
 Int_t r_integr_NaI = 300000;
+Int_t l_integr_GAGG = 600000;
+Int_t r_integr_GAGG = 1600000;
 
 ///////////////////////
 ///////////////////////
@@ -41,7 +43,7 @@ void Waveforms_calibration_nprocs(
 {
 
     #if UsedScatterer
-    const Int_t total_channels = 35;
+    const Int_t total_channels = 36;
     #else
     const Int_t total_channels = 34;
     #endif
@@ -100,7 +102,8 @@ void Waveforms_calibration_nprocs(
         for (Int_t channel_number = 0; channel_number < total_channels; channel_number++)
         {
             TString hernya = Form(postfix+"_charge_ADC_ch_%i_int_%i",channel_number,num_int);
-            peak_histo[channel_number] = new TH1F (hernya.Data(),hernya.Data(),100,l_integr_NaI,r_integr_NaI);
+            if (channel_number < 34) peak_histo[channel_number] = new TH1F (hernya.Data(),hernya.Data(),100,l_integr_NaI,r_integr_NaI);
+            if (channel_number == 34 || channel_number == 35) peak_histo[channel_number] = new TH1F (hernya.Data(),hernya.Data(),100,l_integr_GAGG,r_integr_GAGG);
         }
 
         for (Long_t iEvent = Events_for_cuts_left; iEvent < Events_for_cuts_right; iEvent++)
@@ -155,43 +158,47 @@ void Waveforms_calibration_nprocs(
         }
     //////////////////////////////////
     //Calibrating intermediate scatterer
-    
-        // for (Long_t iEvent = Events_for_cuts_left; iEvent < Events_for_cuts_right; iEvent++)
-        // {
-        //     PMT_tree->GetEntry(iEvent);
-        //     Int_t zero_level = channel_info[total_channels-1].Get_Zero_Level(GATE_BEG);
-        //     Int_t gateIntegral = channel_info[total_channels-1].Get_Charge(zero_level, GATE_BEG, Intermediate_gate);
-        //     if (gateIntegral > 4000
-        //     && channel_info[total_channels-1].Get_Amplitude(zero_level, GATE_BEG, Intermediate_gate) > 1000
-        //     && channel_info[total_channels-1].Get_Amplitude(zero_level, GATE_BEG, Intermediate_gate) < 60000
-        //     // && abs(channel_info[34].Get_peak_position(channel_info[34].Get_Zero_Level(GATE_BEG))-channel_info[32].Get_peak_position(channel_info[32].Get_Zero_Level(GATE_BEG))) > 10
-        //     // && channel_info[34].Get_Amplitude(channel_info[34].Get_Zero_Level(GATE_BEG), GATE_BEG, GATE_END) < 400
-        //     ) 
-        //     {
-        //         peak_histo[total_channels-1]->Fill(gateIntegral);
-        //     }
-        //     channel_info[total_channels-1].Initialize();
+        for (int chiter = 34; chiter < total_channels;chiter++)
+        {
+            for (Long_t iEvent = Events_for_cuts_left; iEvent < Events_for_cuts_right; iEvent++)
+            {
+                PMT_tree->GetEntry(iEvent);
+                Int_t zero_level = channel_info[chiter].Get_Zero_Level(GATE_BEG);
+                Int_t gateIntegral = channel_info[chiter].Get_Charge(GATE_BEG, Intermediate_gate);
 
-        // }
+                if (gateIntegral > 4000
+                && channel_info[chiter].Get_Amplitude(GATE_BEG, Intermediate_gate) > 1000
+                && channel_info[chiter].Get_Amplitude(GATE_BEG, Intermediate_gate) < 60000
+                // && abs(channel_info[34].Get_peak_position(channel_info[34].Get_Zero_Level(GATE_BEG))-channel_info[32].Get_peak_position(channel_info[32].Get_Zero_Level(GATE_BEG))) > 10
+                // && channel_info[34].Get_Amplitude(channel_info[34].Get_Zero_Level(GATE_BEG), GATE_BEG, GATE_END) < 400
+                ) 
+                {
+                    peak_histo[chiter]->Fill(gateIntegral);
+                }
+                channel_info[chiter].Initialize();
+
+            }
 
 
-        //PMT_tree->Draw(Form("channel_%i.charge >> %s",total_channels-1, hernya.Data()), Form("channel_%i.charge > 4000",total_channels-1));
-        TF1 *gaus_fit = new TF1 ("gaus_func","gaus",
-        peak_histo[total_channels-1]->GetBinCenter(peak_histo[total_channels-1]->GetMaximumBin())-20000,
-        peak_histo[total_channels-1]->GetBinCenter(peak_histo[total_channels-1]->GetMaximumBin())+20000);
-        peak_histo[total_channels-1]->Fit("gaus_func","R");
-        TF1 *gaus_2_fit = new TF1 ("gaus_func_2","gaus",
-        (gaus_fit->GetParameter(1))-gaus_fit->GetParameter(2),
-        (gaus_fit->GetParameter(1))+gaus_fit->GetParameter(2));
-        peak_histo[total_channels-1]->Fit("gaus_func_2","R");
-        mean_int[total_channels-1] = gaus_2_fit->GetParameter(1);
-        sigma_i[total_channels-1] = gaus_2_fit->GetParameter(2);
-        low_cut[total_channels-1] = gaus_2_fit->GetParameter(1)-interval_width*gaus_2_fit->GetParameter(2);
-        high_cut[total_channels-1] = gaus_2_fit->GetParameter(1)+interval_width*gaus_2_fit->GetParameter(2);
-        peak_histo[total_channels-1]->Write();
-        cal_coeff[total_channels-1].peak_for_calibration = mean_int[total_channels-1];
-        cal_coeff[total_channels-1].time_in_hours = time_of_run;
-        delete peak_histo[total_channels-1];
+            //PMT_tree->Draw(Form("channel_%i.charge >> %s",chiter, hernya.Data()), Form("channel_%i.charge > 4000",chiter));
+            TF1 *gaus_fit = new TF1 ("gaus_func","gaus",
+            peak_histo[chiter]->GetBinCenter(peak_histo[chiter]->GetMaximumBin())-20000,
+            peak_histo[chiter]->GetBinCenter(peak_histo[chiter]->GetMaximumBin())+20000);
+            peak_histo[chiter]->Fit("gaus_func","R");
+            TF1 *gaus_2_fit = new TF1 ("gaus_func_2","gaus",
+            (gaus_fit->GetParameter(1))-gaus_fit->GetParameter(2),
+            (gaus_fit->GetParameter(1))+gaus_fit->GetParameter(2));
+            peak_histo[chiter]->Fit("gaus_func_2","R");
+            mean_int[chiter] = gaus_2_fit->GetParameter(1);
+            sigma_i[chiter] = gaus_2_fit->GetParameter(2);
+            low_cut[chiter] = gaus_2_fit->GetParameter(1)-interval_width*gaus_2_fit->GetParameter(2);
+            high_cut[chiter] = gaus_2_fit->GetParameter(1)+interval_width*gaus_2_fit->GetParameter(2);
+            peak_histo[chiter]->Write();
+            cal_coeff[chiter].peak_for_calibration = mean_int[chiter];
+            cal_coeff[chiter].time_in_hours = time_of_run;
+            delete peak_histo[chiter];
+
+        }
 
         //
     ////////////////////////////////////
@@ -290,18 +297,14 @@ void Waveforms_calibration_nprocs(
                 if (channel_number == 32 || channel_number == 33) energy_in_peak = 255;
                 if (channel_number < 34) 
                 {
-                    short_channel_info[channel_number].charge = 
-                    //(float)energy_in_peak/mean_int[channel_number]*
-                    channel_info[channel_number].Get_Charge(GATE_BEG, CH_GATE_END);
+                    short_channel_info[channel_number].charge = (float)energy_in_peak/mean_int[channel_number]*channel_info[channel_number].Get_Charge(GATE_BEG, CH_GATE_END);
                 }
                 else 
                 {   if (channel_number == 34 || channel_number == 35) 
                     {
                         channel_info[channel_number].SplineWf();
                         channel_info[channel_number].SplineWf();
-                        short_channel_info[channel_number].charge = 
-                        //(Float_t)170.3/mean_int[34]*
-                        channel_info[channel_number].Get_Charge(GATE_BEG, CH_GATE_END);
+                        short_channel_info[channel_number].charge = (Float_t)170.3/mean_int[34]*channel_info[channel_number].Get_Charge(GATE_BEG, CH_GATE_END);
                     }
                 }
                 //Int_t inv_amp = channel_info[channel_number].Get_Amplitude(zero_level);
