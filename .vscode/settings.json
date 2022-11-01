@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "Waveforms_calibration_nprocs.C": "cpp"
+        "Waveforms_calibration_nprocs.C": "cpp",
+        "DrawWaveforms.C": "cpp"
     }
 }

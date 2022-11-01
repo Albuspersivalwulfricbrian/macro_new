@@ -76,7 +76,7 @@ void Waveforms_calibration_nprocs(
     PMT_tree->AddFile( (file_name + "/adc64_data").Data() );
     for (Int_t channel_number = 0; channel_number < total_channels; channel_number++)
         (channel_info[channel_number]).SetBranch(PMT_tree,channel_number);
-    Int_t total_entries = PMT_tree->GetEntries()/100;
+    Int_t total_entries = PMT_tree->GetEntries()/1;
     TLeaf *tf = PMT_tree->GetLeaf("time_in_seconds");
 ///////////////////////
 ///////////////////////
@@ -304,7 +304,7 @@ void Waveforms_calibration_nprocs(
                     {
                         channel_info[channel_number].SplineWf();
                         channel_info[channel_number].SplineWf();
-                        short_channel_info[channel_number].charge = (Float_t)170.3/mean_int[34]*channel_info[channel_number].Get_Charge(GATE_BEG, CH_GATE_END);
+                        short_channel_info[channel_number].charge = (Float_t)170.3/mean_int[channel_number]*channel_info[channel_number].Get_Charge(GATE_BEG, CH_GATE_END);
                     }
                 }
                 //Int_t inv_amp = channel_info[channel_number].Get_Amplitude(zero_level);
@@ -318,7 +318,7 @@ void Waveforms_calibration_nprocs(
                 short_channel_info[channel_number].zl = zero_level;
 
                 diff_short_channel_info[channel_number].Initialize();
-                if ((channel_number == 34 && channel_number == 35) && channel_info[channel_number].wf_size != 0) 
+                if ((channel_number == 34 || channel_number == 35) && channel_info[channel_number].wf_size != 0) 
                 {   Short_t max = 0; Short_t min = 0; Short_t maxt = 0; Short_t mint = 0;
                     channel_info[channel_number].DiffWf();
                     channel_info[channel_number].FindDiffWfPars(min,mint,max,maxt);

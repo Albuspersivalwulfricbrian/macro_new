@@ -24,10 +24,9 @@
 #include <TGMenu.h>
 #include <RQ_OBJECT.h>
 #include <TRootEmbeddedCanvas.h>
-
+//#include "DECONVOLUTION.h"
 #include <TGDockableFrame.h>
-
-
+#include "constants.h"
 enum ETestCommandIdentifiers {
    M_FILE_OPEN,
    M_FILE_EXIT
@@ -44,12 +43,13 @@ const char *filetypes[] = { "All files",     "*",
 class MyMainFrame : public TGMainFrame {
 
 private:
-   static const Int_t total_channels = 35;
+   static const Int_t total_channels = NUMBER_OF_CHANNELS;
    TRootEmbeddedCanvas  *fEcan;
    TGNumberEntry       *fNumber;
    Int_t entrynum;
    TTree *t1;
    ChannelEntry channel_info[total_channels];
+   //DECONVOLUTION decon;
    TString fName;
    Int_t n;
    TGNumberEntry       *fChannel;
@@ -85,6 +85,8 @@ public:
 MyMainFrame::MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h, TString s) :
    TGMainFrame(p, w, h)
 {
+      //decon.SetResponse();
+
    
 ///////////////////
    fMenuDock = new TGDockableFrame(this);
@@ -125,7 +127,7 @@ MyMainFrame::MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h, TString s) :
    fChannel = new TGNumberEntry(this, 0, 9,999, TGNumberFormat::kNESInteger,
                                                TGNumberFormat::kNEANonNegative,
                                                TGNumberFormat::kNELLimitMinMax,
-                                               0,34);
+                                               0,NUMBER_OF_CHANNELS);
    fChannel->Connect("ValueSet(Long_t)", "MyMainFrame", this, "SetChannel()");
    AddFrame(fChannel, new TGLayoutHints(kLHintsTop | kLHintsCenterX, 0 , 0 , 0 , 0));
 ////////////evnum
@@ -170,19 +172,36 @@ void MyMainFrame::DoDraw()
 {
    n = channel_info[ChNum].wf_size;
    //Printf("Slot DoDraw()");
-
+   int zl = channel_info[ChNum].Get_Zero_Level(50);
+   int amp = channel_info[ChNum].Get_Amplitude(zl);
    TCanvas *c1 = fEcan->GetCanvas();
    c1->SetFillColor(42);
    c1->SetGrid();
-   Double_t x[2048] = {0.}; Double_t y[2048] = {0.};
-   
+   Double_t x[2048] = {0.}; Double_t y[1024] = {0.}; Double_t z[2048] = {0.};
+   cout << amp << endl;
+
+
+
+   //for (int cc = 0; cc < 2; cc++) channel_info[ChNum].SplineWf();
    for (Int_t i=0;i<n;i++) {
-     x[i] = i;
-     y[i] = channel_info[ChNum].wf[i];
+        x[i] = i;
+
+      z[i] = channel_info[ChNum].wf[i];
+   }
+   // decon.Reset();
+   // decon.SetZl(channel_info[ChNum].Get_Zero_Level(50));
+   // decon.SetSignal(channel_info[ChNum].wf);
+   // decon.deconvolution();
+   // decon.GetSignal(y);
+                channel_info[ChNum].SplineWf();
+                channel_info[ChNum].SplineWf();
+                channel_info[ChNum].SplineWf();
+   for (Int_t i=0;i<n;i++) {
+      y[i] = channel_info[ChNum].wf[i];
    }
 
    ///////////
-   TGraph *gr = new TGraph(n,x,y);
+   TGraph *gr = new TGraph(n,x,z);
    gr->SetLineColor(2);
    gr->SetLineWidth(4);
    gr->SetMarkerColor(1);
@@ -194,12 +213,22 @@ void MyMainFrame::DoDraw()
    gr->GetYaxis()->SetTitle("ADC channels");
    gr->Draw("APL");
 
+   // TGraph *gr1 = new TGraph(n,x,y);
+   // gr1->SetLineColor(4);
+   // gr1->SetLineWidth(2);
+   // gr1->SetMarkerColor(1);
+   // gr1->SetMarkerStyle(21);
+   // gr1->SetMarkerSize(1);
+   // gr1->Draw("same");
+
    // TCanvas::Update() draws the frame, after which it can be changed
    c1->Update();
    c1->GetFrame()->SetFillColor(21);
    c1->GetFrame()->SetBorderSize(12);
    c1->Modified();
    c1->Update();
+
+
 }
 
 void MyMainFrame::DoExit()
@@ -259,8 +288,8 @@ void MyMainFrame::SetChannel()
     DoDraw();
 }
 
-void DrawWaveforms(  TString file_path = "/home/doc/Downloads",
-                     TString file_name = "07a8de9a_20220418_100507.root")
+void DrawWaveforms(  TString file_path = "/home/doc/SiPM_low_energy_detector/new_adc_data/Jp/diff_k/Co57",
+                     TString file_name = "Co57_k_2.root")
 {
    new MyMainFrame(gClient->GetRoot(), 200, 200, file_path+"/"+file_name);
 }

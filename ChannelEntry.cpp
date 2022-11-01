@@ -76,7 +76,7 @@ using namespace std;
             Int_t il=i-Diff_window; Int_t ir=i+Diff_window;
             if (il<0) il=0;
             if (ir>wf_size-1) ir=wf_size-1;
-            wf1[i]=(Short_t)((wf[ir]-wf[il])/(ir-il));
+            wf1[i]=(Short_t)((Float_t)(wf[ir]-wf[il])/(Float_t)(ir-il));
         }
         for (Int_t i = 0; i < wf_size; i++) wf[i] = wf1[i];
     }    
