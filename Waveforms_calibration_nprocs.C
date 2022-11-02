@@ -8,18 +8,11 @@
 #include <TLeaf.h>
 #include <TF1.h>
 #include <TChain.h>
-//#include <TObjArray.h>
 #include <TString.h>
-// #include <TDirectory.h>
-// #include <TSystemFile.h>
-// #include <TSystemDirectory.h>
-// #include <TObjString.h>
 #include "ChannelEntry.h"
 #include "Coeffs.h"
-//#include <stdlib.h>
-
 #define UsedScatterer 1
-using std::cout, std::endl, std::array;
+// using std::cout, std::endl, std::array;
 
 const int GATE_BEG = 50;
 const int GATE_END = 150;
@@ -27,14 +20,11 @@ const Int_t N_zl_intervals = 2;
 const Int_t Gate_end_for_main_scatterers = 76;
 const Int_t Intermediate_gate = 200;
 
-////////////////////////
 ///////////////////////Define fit constants range
 Int_t l_integr_NaI = 30000;
 Int_t r_integr_NaI = 300000;
 Int_t l_integr_GAGG = 600000;
 Int_t r_integr_GAGG = 1600000;
-
-///////////////////////
 ///////////////////////
 
 void Waveforms_calibration_nprocs(
@@ -179,8 +169,6 @@ void Waveforms_calibration_nprocs(
 
             }
 
-
-            //PMT_tree->Draw(Form("channel_%i.charge >> %s",chiter, hernya.Data()), Form("channel_%i.charge > 4000",chiter));
             TF1 *gaus_fit = new TF1 ("gaus_func","gaus",
             peak_histo[chiter]->GetBinCenter(peak_histo[chiter]->GetMaximumBin())-20000,
             peak_histo[chiter]->GetBinCenter(peak_histo[chiter]->GetMaximumBin())+20000);
@@ -200,24 +188,19 @@ void Waveforms_calibration_nprocs(
 
         }
 
-        //
     ////////////////////////////////////
         TString left_name = postfix+Form("_charge_left_arm_scatterer_interval_number_%i",num_int);
         TString right_name = postfix+Form("_charge_right_arm_scatterer_interval_number_%i",num_int);
         Int_t scatterer_left_boarder_peak_search = 0000;
 
-
         peak_histo[32] = new TH1F (left_name.Data(),left_name.Data(),200,scatterer_left_boarder_peak_search,500000);
         peak_histo[33] = new TH1F (right_name.Data(),right_name.Data(),200,scatterer_left_boarder_peak_search,500000);
 
-            //TH1F *peak_histo[32] = nullptr;
         for (Int_t channel_number = 0; channel_number < 32; channel_number++)
         {
             TString hernya = Form(postfix+"_charge_scatterer_ch_cut_%i_interval_%i",channel_number,num_int);
             peak_histo[channel_number] = new TH1F (hernya.Data(),hernya.Data(),200,scatterer_left_boarder_peak_search,500000);
         }
-
-
         for (Long_t iEvent = Events_for_cuts_left; iEvent < Events_for_cuts_right; iEvent++)
         {
             //for (int ch = 0; ch < total_channels; ch++) channel_info[ch].Initialize();
@@ -225,13 +208,11 @@ void Waveforms_calibration_nprocs(
             for (Int_t channel_number = 0; channel_number < 32; channel_number++)
             {
                 Int_t zero_level = channel_info[channel_number].Get_Zero_Level(GATE_BEG);
-
                 Int_t sc_number = 0;
                 if (channel_number < 16) sc_number = 32;
                 if (channel_number >= 16) sc_number = 33;
                 Int_t zero_level_32 = channel_info[32].Get_Zero_Level(GATE_BEG);
                 Int_t zero_level_33 = channel_info[33].Get_Zero_Level(GATE_BEG);
-                
                 Int_t zero_level_gagg_1 = channel_info[34].Get_Zero_Level(GATE_BEG);                
 
                 if (channel_info[channel_number].Get_Charge(GATE_BEG, GATE_END) > low_cut[channel_number]
@@ -239,7 +220,6 @@ void Waveforms_calibration_nprocs(
                 //&& abs(channel_info[32].Get_peak_position(zero_level, GATE_BEG, GATE_END)-channel_info[33].Get_peak_position(zero_level, GATE_BEG, GATE_END)) < 2
                 && (channel_info[channel_number].Get_peak_position()-channel_info[sc_number].Get_peak_position()) > 0
                 && (channel_info[channel_number].Get_peak_position()-channel_info[sc_number].Get_peak_position()) < 14
-
                 && channel_info[channel_number].Get_Amplitude(GATE_BEG, GATE_END) < 60000
                 && channel_info[channel_number].Get_Amplitude(GATE_BEG, GATE_END) > 400
                 
@@ -276,7 +256,6 @@ void Waveforms_calibration_nprocs(
             cal_coeff[channel_number].peak_for_calibration = mean_int[channel_number];
             cal_coeff[channel_number].time_in_hours = time_of_run;
             delete peak_histo[channel_number];
-
         }
         gr_point_counter++;
 

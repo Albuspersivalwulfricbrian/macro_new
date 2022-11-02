@@ -4,6 +4,13 @@
 
 const int MAX_N_SAMPLES = 2048;
 
+struct IntegralInfo
+{
+    Short_t signal_length;
+    Short_t npeaks;
+    Int_t end_amplitude;
+    void Initialize();
+};
 
 struct short_energy_ChannelEntry
 {
@@ -12,6 +19,7 @@ struct short_energy_ChannelEntry
     UShort_t amp; 
     Float_t zl;
     Float_t zl_rms;
+    IntegralInfo II;
 
     static TString GetChName(Int_t channel_num);
     TBranch* CreateBranch(TTree *tree, Int_t channel_num);
@@ -39,7 +47,7 @@ struct ChannelEntry {
 
     private:
     Float_t zl;
-
+    IntegralInfo II;
     public:
     static TString GetChName(Int_t channel_num);
     Int_t SetBranch(TTree *tree, Int_t channel_num);

@@ -4,6 +4,13 @@
 #include <iostream>
 
 using namespace std;
+
+    void forNoise::Initialize()
+    {
+        signal_length = 0;
+        npeaks = 0;
+        end_amplitude = 0;    
+    }
     void short_energy_ChannelEntry::Initialize()
     {
         charge = 0.;
@@ -11,9 +18,8 @@ using namespace std;
         amp = 0; 
         zl_rms = 0.;
         zl = 0.;
+        II.Initialize();
     }
-
-
     TString diff_short_energy_ChannelEntry::GetChName(Int_t channel_num)
     {
 	    return TString::Format("diff_channel_%i", channel_num);
@@ -22,10 +28,7 @@ using namespace std;
     {
 	    return tree->Branch(GetChName(channel_num).Data(), this, "min_diff/S:min_diff_time/S:max_diff/S:max_diff_time/S");
     }
-    // Int_t diff_short_energy_ChannelEntry::SetBranch(TTree *tree, Int_t channel_num)
-    // {
-    //     return tree->SetBranchAddress(GetChName(channel_num).Data(), this);
-    // }
+
     void diff_short_energy_ChannelEntry::Initialize()
     {
         min_diff = 0;
@@ -80,19 +83,6 @@ using namespace std;
         }
         for (Int_t i = 0; i < wf_size; i++) wf[i] = wf1[i];
     }    
-
-    // void  ChannelEntry::CalculateC()
-    // {
-    //     const Float_t Diff_window = 4;
-    //     Short_t wf1[MAX_N_SAMPLES] = {0};
-    //     for (Int_t i = 0; i < wf_size; i++)
-    //     {
-    //         Int_t il=i-Diff_window; Int_t ir=i+Diff_window;
-    //         if (il<0) il=0;
-    //         if (ir>wf_size-1) ir=wf_size-1;
-    //         wf1[i]=(Short_t)((wf[ir]-wf[il])/(ir-il));
-    //     }
-    // } 
 
     void ChannelEntry::FindDiffWfPars(Short_t &min_diff, Short_t &min_time, Short_t &max_diff, Short_t &max_time, Int_t GATE_BEG, Int_t GATE_END)
     {
@@ -166,7 +156,7 @@ using namespace std;
     {
         Float_t gateInteg = 0;
         for (int s=GATE_BEG; s < GATE_END+1; ++s) {
-            gateInteg +=  (zl - (Float_t)wf[s]) ;
+            if (((float)zl - (float)wf[s]) < 10 && s > GATE_BEG + 20) gateInteg +=  (zl - (Float_t)wf[s]) ;
         }
         return gateInteg;
     }
@@ -217,24 +207,15 @@ using namespace std;
     }
 
 //##################
-//#################
-
 
     TString mini_tree_nrg::GetBrName()
     {
 	    return TString::Format("MiniTree");
     }
-
     TBranch* mini_tree_nrg::CreateBranches(TTree *tree)
     {
 	    return tree->Branch(GetBrName().Data(), this, "EdepIntermediate/F:EdepScat0/F:EdepScat1/F:EdepDet0/F:EdepDet1/F:DetNum0/S:DetNum1/S");
     }
-
-    // Int_t mini_tree_nrg::SetBranch(TTree *tree)
-    // {
-    //     return tree->SetBranchAddress(GetBrName().Data(), this);
-    // }
-
     Int_t mini_tree_nrg::Initialize()
     {
         EdepIntermediate = 0;
@@ -247,7 +228,6 @@ using namespace std;
         return 0;
     }
 
-
     TString mini_tree_time::GetBrName()
     {
 	    return TString::Format("TimeTree");
@@ -257,11 +237,6 @@ using namespace std;
     {
 	    return tree->Branch(GetBrName().Data(), this, "TimeIntermediate/F:TimeScat0/F:TimeScat1/F:TimeDet0/F:TimeDet1/F");
     }
-
-    // Int_t mini_tree_time::SetBranch(TTree *tree)
-    // {
-    //     return tree->SetBranchAddress(GetBrName().Data(), this);
-    // }
 
     Int_t mini_tree_time::Initialize()
     {
