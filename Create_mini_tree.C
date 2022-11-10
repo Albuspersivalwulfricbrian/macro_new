@@ -18,11 +18,11 @@
 #include <TGraphErrors.h>
 #include <TObjString.h>
 #include "ChannelEntry.h"
-#include "CHSH_calculator.h"
-#include "Check_entanglement_cuts.h"
+#include "CHSH_class.h"
+#include "Double_scattering_cuts.h"
 
 using namespace std;
-using namespace CHSH;
+//using namespace CHSH;
 using namespace CUTS;
 
 #define UseManyRoots 0
@@ -30,7 +30,9 @@ using namespace CUTS;
 #define CalculateRatio 1
 #define DrawTime 1
 #define UseIntegralCut 1
-#define UseNotEntangledPhotons 1
+#define UseDecoherent 0
+#define UseEntangled 0
+#define UseDoubleDecoherent 1
 #define DrawToPDF 0
 #define calculate_CHSH 0
 
@@ -41,22 +43,31 @@ void Create_mini_tree()
 	gStyle->SetOptFit(1);
 	//gStyle->SetOptStat(1111);
 	//TString source_path = "/home/doc/entanglement/root_files_data/with_scatterer/big_file/";
-	TString source_path = "/home/doc/entanglement/with_spline/entangled/";
+	TString source_path = "/home/doc/entanglement/double_GAGG/";
 
-#if UseNotEntangledPhotons
+#if UseDecoherent
     TString result_path  = source_path + "decoh_mini_tree";
-    const Bool_t entangled = kFALSE;
-#else
+    const TString entangled = "decoherent";
+#endif 
+
+#if UseDoubleDecoherent
+    TString result_path  = source_path + "double_decoh_mini_tree";
+    const TString entangled = "double";
+#endif 
+
+#if UseEntangled
     TString result_path = source_path + "entangled_mini_tree";
-    const Bool_t entangled = kTRUE;
+    const TString entangled = "entangled";
 #endif
+
     TFile *mini_tree_file = new TFile(result_path+".root", "RECREATE");
     TTree *short_tree = new TTree("Signals","Signals");
     mini_tree_nrg mini_leaves;
     mini_tree_time mini_time; 
-    mini_leaves.CreateBranches(short_tree);
-    mini_time.CreateBranches(short_tree);
-
+    // mini_leaves.CreateBranches(short_tree);
+    // mini_time.CreateBranches(short_tree);
+    short_tree->Branch("MiniTree",&mini_leaves);
+    short_tree->Branch("TimeTree",&mini_time);
 //////////////
     const Int_t left_NaI_range = 180;
     const Int_t right_NaI_range = 280;
@@ -65,7 +76,7 @@ void Create_mini_tree()
     Float_t low_cut[32] = {0}; Float_t high_cut[32] = {0}; 
     Float_t total_low_cut[32] = {0}; Float_t total_high_cut[32] = {0};
     Float_t sigma_i[32] = {0}; Float_t mean_int[32] = {0};
-    Float_t average_scatterer_peak_position[32] = {0};
+    Float_t average_scatterer_timeition[32] = {0};
     Float_t sigma_scatterer[32] = {0};
     Float_t low_energy_cut[32] = {0};
     Float_t high_energy_cut[32] = {0};
@@ -108,18 +119,28 @@ void Create_mini_tree()
 
 ///////////////////////////////////////////////
     TChain *PMT_tree = new TChain;
-	PMT_tree->AddFile( (source_path + "calibrated_time.root" + "/adc64_data").Data() );
+	PMT_tree->AddFile( (source_path + "calibrated_time_0.root" + "/adc64_data").Data() );
 ///////////////////////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////
     const Int_t calculate_Events_Number = PMT_tree->GetEntries()/events_divider;
     Int_t Events_for_cuts = calculate_Events_Number/1;
 ///////////////////////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\//////////////////////////
 #if PresentIntermediate    
-    const Int_t total_channels = 35;
-    short_energy_ChannelEntry *short_channel_info = new short_energy_ChannelEntry[total_channels];
-    for(Int_t ch = 0; ch < total_channels; ch++)
-        (short_channel_info+ch)->SetBranch(PMT_tree, ch);
-    diff_short_energy_ChannelEntry *diff_4_cut = new diff_short_energy_ChannelEntry;
-    diff_4_cut->SetBranch(PMT_tree, 34);
+    const Int_t total_channels = 36;
+    //short_energy_ChannelEntry* short_channel_info = new short_energy_ChannelEntry[total_channels];
+    //short_energy_ChannelEntry short_channel_info[total_channels];
+    std::array<short_energy_ChannelEntry*, total_channels> short_channel_info;
+    //std::array<short_energy_ChannelEntry*, n> short_channel_info
+    for(Int_t ch = 0; ch < total_channels; ch++) //(short_channel_info[ch]).SetBranch(PMT_tree, ch);
+    {
+        short_channel_info[ch] = new short_energy_ChannelEntry();
+        short_channel_info[ch]->Initialize();
+        PMT_tree->SetBranchAddress((TString::Format("channel_%i", ch)).Data(), &short_channel_info[ch]);
+    }
+
+    diff_short_energy_ChannelEntry diff_4_cut [total_channels];
+    //diff_4_cut->SetBranch(PMT_tree, 34);
+    //for(Int_t ch = 35; ch < total_channels; ch++) PMT_tree->SetBranchAddress((TString::Format("diff_channel_%i", ch)).Data(), &diff_4_cut[ch]);
+
 #else
     const Int_t total_channels = 34;
     short_energy_ChannelEntry *short_channel_info = new short_energy_ChannelEntry[total_channels];
@@ -128,40 +149,41 @@ void Create_mini_tree()
 #endif
 
 /////////////////////////charge_cut_range_cuts
-
-    TH1F *peak_histo[35];
+    TH1F *peak_histo[36];
     TH1F *peak_histo_w_o_cuts[35];
     for (Int_t channel_number = 0; channel_number < 32; channel_number++)
     {
         TString hernya = Form("charge_channel_%i",channel_number);
         peak_histo[channel_number] = new TH1F (hernya.Data(),hernya.Data(),histos_bins_number,histos_left_boarder,histos_right_boarder);
     }
+
     for (Int_t iEvent = 0; iEvent < Events_for_cuts; iEvent++)
     {
         PMT_tree->GetEntry(iEvent);
         for (Int_t channel_number = 0; channel_number < 32; channel_number++)
         {
+            
             Int_t sc_number = 33;
             if (channel_number < 16) sc_number = 32;
+            
             if (
-                Apply_time_in_peak_cuts(short_channel_info, channel_number, sc_number)
-            && Apply_Amplitude_Saturation_cuts(short_channel_info, channel_number)
+                Apply_time_in_peak_cuts<total_channels>(short_channel_info, channel_number, sc_number)
+            && Apply_Amplitude_Saturation_cuts<total_channels>(short_channel_info, channel_number)
 
             #if UseIntegralCut
-            && short_channel_info[32].charge > 140
-            && short_channel_info[32].charge < 400             
-            #endif   
+            && short_channel_info[sc_number]->charge > 140
+            && short_channel_info[sc_number]->charge < 400             
+            #endif
 
             #if PresentIntermediate
-            && Decoherent_or_Entangled(short_channel_info, entangled) 
+            && Double_Decoherent_or_Decoherent_or_Entangled<total_channels>(short_channel_info, entangled) 
             #endif
             ) 
             {
-                peak_histo[channel_number]->Fill(short_channel_info[channel_number].charge);
+                peak_histo[channel_number]->Fill(short_channel_info[channel_number]->charge);
             }
         }
     }
-
     for (Int_t channel_number = 0; channel_number < 32; channel_number++)
     {
         double_gauss_fit(peak_histo[channel_number], low_cut[channel_number], high_cut[channel_number]);
@@ -190,17 +212,17 @@ void Create_mini_tree()
     true_sum_hist_right->Draw();
     canv_0->SaveAs(result_path+".pdf(",".pdf");
     
-    #if DrawToPDF
-    TCanvas *temp_canv = new TCanvas("temp_canv","temp_canv");
-    temp_canv->Divide(2);
-    temp_canv->cd(1);
-    PMT_tree->Draw("channel_34.charge >> ch_34.charge","channel_34.amp > 400 && channel_34.amp < 60000");
-    int_without_cuts->GetYaxis()->SetRangeUser(0,(Int_t)1.05*int_without_cuts->GetMaximum());
-    temp_canv->cd(2);
-    PMT_tree->Draw("channel_34.charge >> ch_34.charge_with_time_cuts","channel_34.amp > 400 && channel_34.amp < 60000 && channel_34.peak_pos - channel_32.peak_pos > -30 && channel_34.peak_pos - channel_32.peak_pos < 60");
-    int_with_cuts->GetYaxis()->SetRangeUser(0,(Int_t)1.05*int_without_cuts->GetMaximum());
-    temp_canv->SaveAs(result_path + ".pdf(",".pdf");
-    #endif
+    // #if DrawToPDF
+    // TCanvas *temp_canv = new TCanvas("temp_canv","temp_canv");
+    // temp_canv->Divide(2);
+    // temp_canv->cd(1);
+    // PMT_tree->Draw("channel_34.charge >> ch_34.charge","channel_34.amp > 400 && channel_34.amp < 60000");
+    // int_without_cuts->GetYaxis()->SetRangeUser(0,(Int_t)1.05*int_without_cuts->GetMaximum());
+    // temp_canv->cd(2);
+    // PMT_tree->Draw("channel_34.charge >> ch_34.charge_with_time_cuts","channel_34.amp > 400 && channel_34.amp < 60000 && channel_34.time - channel_32.time > -30 && channel_34.time - channel_32.time < 60");
+    // int_with_cuts->GetYaxis()->SetRangeUser(0,(Int_t)1.05*int_without_cuts->GetMaximum());
+    // temp_canv->SaveAs(result_path + ".pdf(",".pdf");
+    // #endif
 
 ////////////////////////energy in diffuser
     for (Int_t channel_number = 0; channel_number < 32; channel_number++)
@@ -213,16 +235,16 @@ void Create_mini_tree()
         PMT_tree->GetEntry(iEvent);
         for (Int_t channel_number = 0; channel_number < 16; channel_number++)
         {
-            if (short_channel_info[channel_number].charge > low_cut[channel_number]
-            && short_channel_info[channel_number].charge < high_cut[channel_number]
-            && Apply_time_in_peak_cuts(short_channel_info, channel_number)
-            && Apply_Amplitude_Saturation_cuts(short_channel_info,channel_number)
+            if (short_channel_info[channel_number]->charge > low_cut[channel_number]
+            && short_channel_info[channel_number]->charge < high_cut[channel_number]
+            && Apply_time_in_peak_cuts<total_channels>(short_channel_info, channel_number)
+            && Apply_Amplitude_Saturation_cuts<total_channels>(short_channel_info,channel_number)
             
             #if PresentIntermediate
-            && Decoherent_or_Entangled(short_channel_info,entangled)
+            && Double_Decoherent_or_Decoherent_or_Entangled<total_channels>(short_channel_info,entangled)
             #endif    
             ) 
-            peak_histo[channel_number]->Fill(short_channel_info[34].charge);
+            peak_histo[channel_number]->Fill(short_channel_info[34]->charge);
         }
     }
 
@@ -248,12 +270,12 @@ void Create_mini_tree()
         canv_00->Divide(2);
         canv_00->cd(1);
         PMT_tree->Draw("channel_32.charge >> TRUE_peak_scatterer_left_sum_spectrum"
-        ,"channel_32.peak_pos - channel_33.peak_pos > -10 && channel_32.peak_pos - channel_33.peak_pos < 10"
+        ,"channel_32.time - channel_33.time > -10 && channel_32.time - channel_33.time < 10"
         "&& channel_32.amp < 60000 && channel_32.amp > 400"
         "&& channel_33.amp > 400 && channel_33.amp < 60000"
 
-#if UseNotEntangledPhotons
-        "&& channel_32.peak_pos - channel_34.peak_pos > -60 && channel_32.peak_pos - channel_34.peak_pos < 60"
+#if UseDecoherent
+        "&& channel_32.time - channel_34.time > -60 && channel_32.time - channel_34.time < 60"
         "&& channel_34.amp > 400 && channel_34.amp < 60000"            
 #endif
 
@@ -261,11 +283,11 @@ void Create_mini_tree()
         true_sc_sum_hist_left->GetYaxis()->SetRangeUser(0,(Int_t)1.05*true_sc_sum_hist_left->GetMaximum());
         canv_00->cd(2);
         PMT_tree->Draw("channel_33.charge >> TRUE_peak_scatterer_right_sum_spectrum"
-        ,"channel_32.peak_pos - channel_33.peak_pos > -10 && channel_32.peak_pos - channel_33.peak_pos < 10"
+        ,"channel_32.time - channel_33.time > -10 && channel_32.time - channel_33.time < 10"
         "&& channel_32.amp < 60000 && channel_32.amp > 400"
         "&& channel_33.amp > 400 && channel_33.amp < 60000"
-#if UseNotEntangledPhotons
-        "&& channel_32.peak_pos - channel_34.peak_pos > -70 && channel_32.peak_pos - channel_34.peak_pos < -40"
+#if UseDecoherent
+        "&& channel_32.time - channel_34.time > -220 && channel_32.time - channel_34.time < -300"
         "&& channel_34.amp > 400 && channel_34.amp < 60000"            
 #endif
         "",0,Events_for_cuts);
@@ -291,16 +313,16 @@ void Create_mini_tree()
             if (channel_number < 16) sc_number = 32;
             if (channel_number >= 16) sc_number = 33;
             if (
-                short_channel_info[channel_number].charge > low_cut[channel_number]
-            && short_channel_info[channel_number].charge < high_cut[channel_number]
-            && Apply_time_in_peak_cuts(short_channel_info, channel_number, sc_number)
-            && Apply_Amplitude_Saturation_cuts(short_channel_info, channel_number)
+                short_channel_info[channel_number]->charge > low_cut[channel_number]
+            && short_channel_info[channel_number]->charge < high_cut[channel_number]
+            && Apply_time_in_peak_cuts<total_channels>(short_channel_info, channel_number, sc_number)
+            && Apply_Amplitude_Saturation_cuts<total_channels>(short_channel_info, channel_number)
 
             #if PresentIntermediate
-            && Decoherent_or_Entangled(short_channel_info, entangled)
+            && Double_Decoherent_or_Decoherent_or_Entangled<total_channels>(short_channel_info, entangled)
             #endif      
             ) 
-                peak_histo[channel_number]->Fill(short_channel_info[sc_number].charge);
+                peak_histo[channel_number]->Fill(short_channel_info[sc_number]->charge);
                 if (iEvent%10000==0) cout << low_cut[channel_number] << " for ch = "<< channel_number <<endl;
         }
     }
@@ -389,19 +411,19 @@ void Create_mini_tree()
             if (channel_number < 32)
             {
                 if (
-                Non_zero_time(short_channel_info, channel_number)
-                && Apply_Amplitude_Saturation_cuts(short_channel_info, channel_number)
+                Non_zero_time<total_channels>(short_channel_info, channel_number)
+                && Apply_Amplitude_Saturation_cuts<total_channels>(short_channel_info, channel_number)
 
 #if PresentIntermediate
-                && Decoherent_or_Entangled(short_channel_info,entangled)
+                && Double_Decoherent_or_Decoherent_or_Entangled<total_channels>(short_channel_info,entangled)
 #endif
                 )
                 {
-                    peak_histo_w_o_cuts[channel_number]->Fill(short_channel_info[sc_number].peak_pos
-                    -short_channel_info[channel_number].peak_pos);
-                    if (short_channel_info[channel_number].charge > low_cut[channel_number]
-                    && short_channel_info[channel_number].charge < high_cut[channel_number] )
-                        peak_histo[channel_number]->Fill(short_channel_info[sc_number].peak_pos - short_channel_info[channel_number].peak_pos);
+                    peak_histo_w_o_cuts[channel_number]->Fill(short_channel_info[sc_number]->time
+                    -short_channel_info[channel_number]->time);
+                    if (short_channel_info[channel_number]->charge > low_cut[channel_number]
+                    && short_channel_info[channel_number]->charge < high_cut[channel_number] )
+                        peak_histo[channel_number]->Fill(short_channel_info[sc_number]->time - short_channel_info[channel_number]->time);
                 }                    
             }
             else
@@ -409,17 +431,17 @@ void Create_mini_tree()
                 if (channel_number == 33) sc_number = 34;
                 if (
                     #if PresentIntermediate
-                    Decoherent_or_Entangled(short_channel_info, entangled)&& 
+                    Double_Decoherent_or_Decoherent_or_Entangled<total_channels>(short_channel_info, entangled)&& 
                     #endif
-                    Apply_Amplitude_Saturation_cuts(short_channel_info, channel_number)
+                    Apply_Amplitude_Saturation_cuts<total_channels>(short_channel_info, channel_number)
                 )
                 {
                     if (channel_number!=34)
-                        peak_histo[channel_number]->Fill(short_channel_info[sc_number].peak_pos
-                        -short_channel_info[channel_number].peak_pos);
+                        peak_histo[channel_number]->Fill(short_channel_info[sc_number]->time
+                        -short_channel_info[channel_number]->time);
                     if (channel_number==34)
-                        peak_histo[channel_number]->Fill(short_channel_info[33].peak_pos
-                        -short_channel_info[34].peak_pos);                        
+                        peak_histo[channel_number]->Fill(short_channel_info[33]->time
+                        -short_channel_info[34]->time);                        
                 }
             }
         }
@@ -483,25 +505,25 @@ void Create_mini_tree()
         for (Int_t channel_number = 0; channel_number < 32; channel_number++)
         {
             Int_t sc_number = 0; Short_t time_min = 0; Short_t time_max = 0; Float_t Ew = 0;
-            if (channel_number < 16) {sc_number = 32; Ew = short_channel_info[34].charge;}
+            if (channel_number < 16) {sc_number = 32; Ew = short_channel_info[34]->charge;}
             if (channel_number >= 16) sc_number = 33;
             if (
-                short_channel_info[channel_number].charge > low_cut[channel_number]
-            && short_channel_info[channel_number].charge < high_cut[channel_number]
-            && short_channel_info[sc_number].charge > low_energy_cut[channel_number]
-            && short_channel_info[sc_number].charge < high_energy_cut[channel_number]
-            && Apply_time_in_peak_cuts(short_channel_info, channel_number, sc_number
+                short_channel_info[channel_number]->charge > low_cut[channel_number]
+            && short_channel_info[channel_number]->charge < high_cut[channel_number]
+            && short_channel_info[sc_number]->charge > low_energy_cut[channel_number]
+            && short_channel_info[sc_number]->charge < high_energy_cut[channel_number]
+            && Apply_time_in_peak_cuts<total_channels>(short_channel_info, channel_number, sc_number
             //,low_time_cut[32],high_time_cut[32],low_time_cut[channel_number],high_time_cut[channel_number]
             )
             
             #if PresentIntermediate
-            //&& short_channel_info[34].charge < 150
-            && Decoherent_or_Entangled(short_channel_info, entangled)
+            //&& short_channel_info[34]->charge < 150
+            && Double_Decoherent_or_Decoherent_or_Entangled<total_channels>(short_channel_info, entangled)
             #endif          
-            && Apply_Amplitude_Saturation_cuts(short_channel_info, channel_number)
+            && Apply_Amplitude_Saturation_cuts<total_channels>(short_channel_info, channel_number)
             )
             {
-                peak_histo[channel_number]->Fill(short_channel_info[sc_number].charge+short_channel_info[channel_number].charge+Ew);        
+                peak_histo[channel_number]->Fill(short_channel_info[sc_number]->charge+short_channel_info[channel_number]->charge+Ew);        
             }
         }
     }
@@ -538,13 +560,13 @@ void Create_mini_tree()
             if (channel_number < 16) sc_number = 32;
             if 
             (
-                Apply_time_in_peak_cuts(short_channel_info, channel_number, sc_number)
-            && Apply_Amplitude_Saturation_cuts(short_channel_info, channel_number) 
+                Apply_time_in_peak_cuts<total_channels>(short_channel_info, channel_number, sc_number)
+            && Apply_Amplitude_Saturation_cuts<total_channels>(short_channel_info, channel_number) 
 
             #if PresentIntermediate
-            && Decoherent_or_Entangled(short_channel_info, entangled) 
+            && Double_Decoherent_or_Decoherent_or_Entangled<total_channels>(short_channel_info, entangled) 
             #endif
-            && short_channel_info[channel_number].charge > 10
+            && short_channel_info[channel_number]->charge > 10
             ) 
             {
                 if (sc_number == 32) {counter_1++; ch1 = channel_number;}
@@ -557,33 +579,39 @@ void Create_mini_tree()
         {        
             Int_t channel_number = ch1; Int_t channel_number_2 = ch2;
             if(
-            Apply_Amplitude_Saturation_cuts(short_channel_info, channel_number, channel_number_2)
-            && Apply_time_in_peak_cuts(short_channel_info, channel_number, 32)
-            && Apply_time_in_peak_cuts(short_channel_info, channel_number_2, 33)
+            Apply_Amplitude_Saturation_cuts<total_channels>(short_channel_info, channel_number, channel_number_2)
+            && Apply_time_in_peak_cuts<total_channels>(short_channel_info, channel_number, 32)
+            && Apply_time_in_peak_cuts<total_channels>(short_channel_info, channel_number_2, 33)
             #if PresentIntermediate
-            && Decoherent_or_Entangled(short_channel_info,entangled)
-            && diff_cuts(diff_4_cut->min_diff,diff_4_cut->max_diff,entangled)
+            && Double_Decoherent_or_Decoherent_or_Entangled<total_channels>(short_channel_info,entangled)
+            // && diff_cuts((diff_4_cut+34)->min_diff, entangled)
+            // && diff_cuts((diff_4_cut+35)->min_diff,entangled)
+
             #endif
             )
             {
                 Float_t EdepIntermediate = 0.;
-                //#if UseNotEntangledPhotons
-                EdepIntermediate = short_channel_info[34].charge;
+                //#if UseDecoherent
+                EdepIntermediate = short_channel_info[34]->charge;
                 //#endif
                 if ( channel_number == ch1 && channel_number_2 == ch2) 
                 {
-                    mini_leaves.EdepScat0 = short_channel_info[32].charge;
-                    mini_leaves.EdepScat1 = short_channel_info[33].charge;
-                    mini_leaves.EdepDet0 = short_channel_info[ch1].charge;
-                    mini_leaves.EdepDet1 = short_channel_info[ch2].charge;
+                    mini_leaves.EdepScat0 = short_channel_info[32]->charge;
+                    mini_leaves.EdepScat1 = short_channel_info[33]->charge;
+                    mini_leaves.EdepDet0 = short_channel_info[ch1]->charge;
+                    mini_leaves.EdepDet1 = short_channel_info[ch2]->charge;
                     mini_leaves.DetNum0 = ch1;
                     mini_leaves.DetNum1 = ch2;  
-                    mini_leaves.EdepIntermediate = EdepIntermediate;
-                    mini_time.TimeScat0 = short_channel_info[32].peak_pos;
-                    mini_time.TimeScat1 = short_channel_info[33].peak_pos;
-                    mini_time.TimeDet0 = short_channel_info[ch1].peak_pos;
-                    mini_time.TimeDet1 = short_channel_info[ch2].peak_pos;
-                    mini_time.TimeIntermediate = short_channel_info[34].peak_pos;
+                    mini_leaves.EdepIntermediate0 = short_channel_info[34]->charge;
+                    mini_leaves.EdepIntermediate1 = short_channel_info[35]->charge;
+
+                    mini_time.TimeScat0 = short_channel_info[32]->time;
+                    mini_time.TimeScat1 = short_channel_info[33]->time;
+                    mini_time.TimeDet0 = short_channel_info[ch1]->time;
+                    mini_time.TimeDet1 = short_channel_info[ch2]->time;
+                    mini_time.TimeIntermediate0 = short_channel_info[34]->time;
+                    mini_time.TimeIntermediate1 = short_channel_info[35]->time;
+
                     short_tree-> Fill();
                 }
             }

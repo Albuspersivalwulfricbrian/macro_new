@@ -15,7 +15,7 @@ struct IntegralInfo
 struct short_energy_ChannelEntry
 {
     Float_t charge;
-    Float_t peak_pos;
+    Float_t time;
     UShort_t amp; 
     Float_t zl;
     Float_t zl_rms;
@@ -23,7 +23,7 @@ struct short_energy_ChannelEntry
 
     static TString GetChName(Int_t channel_num);
     TBranch* CreateBranch(TTree *tree, Int_t channel_num);
-    // Int_t SetBranch(TTree *tree, Int_t channel_num);
+    Int_t SetBranch(TTree *tree, Int_t channel_num);
     void Initialize();
 };
 
@@ -60,9 +60,12 @@ struct ChannelEntry {
     Int_t Get_Zero_Level(Int_t GATE_BEG);
     Float_t Get_Zero_Level_RMS(Int_t GATE_BEG);
     Float_t Get_Charge(Int_t GATE_BEG, Int_t GATE_END);
-    Short_t Get_peak_position();
-    Float_t Get_peak_position_gauss(Int_t inv_amp, Int_t CH_GATE_END = -1000);
+    Short_t Get_time();
+    Float_t Get_time_gauss(Int_t inv_amp, Int_t CH_GATE_END = -1000);
     UShort_t Get_Amplitude(Int_t GATE_BEG = 0, Int_t CH_GATE_END = -1000);
+    Short_t GetSLength();
+    Int_t GetEndAmp();
+
 };
 
 //##################
@@ -71,7 +74,8 @@ struct ChannelEntry {
 
 struct mini_tree_nrg
 {
-    Float_t EdepIntermediate;
+    Float_t EdepIntermediate0;
+    Float_t EdepIntermediate1;
     Float_t EdepScat0;
     Float_t EdepScat1;
     Float_t EdepDet0;
@@ -79,23 +83,25 @@ struct mini_tree_nrg
     Short_t DetNum0;
     Short_t DetNum1; 
 
-    static TString GetBrName();
-    TBranch* CreateBranches(TTree *tree);
-    // Int_t SetBranch(TTree *tree);
+    // static TString GetBrName();
+    // TBranch* CreateBranches(TTree *tree);
+    Int_t SetBranch(TTree *tree);
     Int_t Initialize();
 };
 
 struct mini_tree_time
 {
-    Float_t TimeIntermediate;
+    Float_t TimeIntermediate0;
+    Float_t TimeIntermediate1;
+
     Float_t TimeScat0;
     Float_t TimeScat1;
     Float_t TimeDet0;
     Float_t TimeDet1;
 
-    static TString GetBrName();
-    TBranch* CreateBranches(TTree *tree);
-    // Int_t SetBranch(TTree *tree);
+    // static TString GetBrName();
+    // TBranch* CreateBranches(TTree *tree);
+    Int_t SetBranch(TTree *tree);
     Int_t Initialize();
 };
 

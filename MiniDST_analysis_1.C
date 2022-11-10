@@ -21,7 +21,9 @@ using namespace std;
 using namespace CHSH;
 using namespace CUTS;
 
-#define UseDecoherentPhotons 1
+#define UseDecoherent 1
+#define UseEntangled 0
+#define UseDoubleDecoherent 0
 #define UseNoCutG 0
 #define UseTimeCut 1
 #define DrawAllAngles 0
@@ -32,7 +34,7 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/with_splin
     const Int_t module_angles = 8;
     const Int_t all_angles = module_angles*2;
 
-#if UseDecoherentPhotons
+#if UseDecoherent
     TString middle_path  = source_path + "decoh_mini_tree";
 #else
     TString middle_path = source_path + "entangled_mini_tree";
@@ -61,19 +63,19 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/with_splin
     /////////////////////////////
     //////////////////////////////
 
-        Float_t low_det0_cut = 180;
-        Float_t high_det0_cut = 300;
-        Float_t low_det1_cut = 180;
-        Float_t high_det1_cut = 300;
+    Float_t low_det0_cut = 180;
+    Float_t high_det0_cut = 300;
+    Float_t low_det1_cut = 180;
+    Float_t high_det1_cut = 300;
 
-        Float_t low_scat0_cut = 150;
-        Float_t high_scat0_cut = 300; 
+    Float_t low_scat0_cut = 150;
+    Float_t high_scat0_cut = 300; 
 
-        
-        Float_t low_scat1_cut = 180;
-        Float_t high_scat1_cut  = 300;
-        Float_t high_Intermediate_cut = 60;
-        Float_t low_Intermediate_cut = 2;
+    
+    Float_t low_scat1_cut = 180;
+    Float_t high_scat1_cut  = 300;
+    Float_t high_Intermediate_cut = 60;
+    Float_t low_Intermediate_cut = 2;
 /////////////////////////////////
 ////////////////////////////////
 
@@ -81,7 +83,7 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/with_splin
     TCanvas *canv_0 = new TCanvas("canv_0,canv_0");
     canv_0->cd();
 
-    #if UseDecoherentPhotons
+    #if UseDecoherent
     TH2F *h2 = new TH2F("h2","h2", 75,0,400,75,0,150); h2->GetZaxis()->SetRangeUser(5,70);
     MiniDST_tree->Draw("MiniTree.EdepIntermediate:MiniTree.EdepDet0 >> h2","TimeTree.TimeIntermediate-TimeScat0 < 75 && TimeTree.TimeIntermediate-TimeScat0 > 50", "colz");
         //MiniDST_tree->Draw("MiniTree.EdepDet0:MiniTree.EdepScat0 >> (75,0,500,75,0,500)","", "colz");
@@ -126,7 +128,7 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/with_splin
         TCanvas *new_canv = new TCanvas("new", "new");
         MiniDST_tree->Draw("MiniTree.EdepDet0 >> det0"
 
-#if UseDecoherentPhotons
+#if UseDecoherent
 
         ,Form("MiniTree.EdepIntermediate < %f && MiniTree.EdepIntermediate > %f", high_Intermediate_cut, low_Intermediate_cut)
 #endif        
@@ -137,7 +139,7 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/with_splin
         new_canv->Clear();
 
         MiniDST_tree->Draw("MiniTree.EdepDet1 >> det1"
-#if UseDecoherentPhotons
+#if UseDecoherent
 
         ,Form("MiniTree.EdepIntermediate < %f && MiniTree.EdepIntermediate > %f", high_Intermediate_cut, low_Intermediate_cut)
 #endif        
@@ -157,11 +159,11 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/with_splin
 
         MiniDST_tree->Draw("MiniTree.EdepScat0 >> scat0", 
         Form("MiniTree.EdepDet0 < %f && MiniTree.EdepDet0 > %f" 
-#if UseDecoherentPhotons
+#if UseDecoherent
         "&& MiniTree.EdepIntermediate < %f && MiniTree.EdepIntermediate > %f"
 #endif
         , high_det0_cut, low_det0_cut 
-#if UseDecoherentPhotons
+#if UseDecoherent
         ,high_Intermediate_cut, low_Intermediate_cut
 #endif
         ));
@@ -238,7 +240,7 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/with_splin
         && time_tree->TimeDet1-time_tree->TimeScat1 < high_time_cut[num1]
         #endif
 
-#if UseDecoherentPhotons
+#if UseDecoherent
         // && short_tree->EdepIntermediate < high_Intermediate_cut
         // && short_tree->EdepIntermediate > low_Intermediate_cut  
         #if UseTimeCut         

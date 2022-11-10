@@ -1,6 +1,9 @@
 {
     "files.associations": {
         "Waveforms_calibration_nprocs.C": "cpp",
-        "DrawWaveforms.C": "cpp"
+        "DrawWaveforms.C": "cpp",
+        "Create_mini_tree.C": "cpp",
+        "MiniDST_analysis_1.C": "cpp",
+        "try_this_shit.C": "cpp"
     }
 }

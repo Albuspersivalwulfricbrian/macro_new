@@ -66,7 +66,7 @@ void Waveforms_calibration_nprocs(
     PMT_tree->AddFile( (file_name + "/adc64_data").Data() );
     for (Int_t channel_number = 0; channel_number < total_channels; channel_number++)
         (channel_info[channel_number]).SetBranch(PMT_tree,channel_number);
-    Int_t total_entries = PMT_tree->GetEntries()/1;
+    Int_t total_entries = PMT_tree->GetEntries();
     TLeaf *tf = PMT_tree->GetLeaf("time_in_seconds");
 ///////////////////////
 ///////////////////////
@@ -111,7 +111,7 @@ void Waveforms_calibration_nprocs(
                 && channel_info[channel_number].Get_Amplitude(GATE_BEG, GATE_END) < 60000
 
             // #if UsedScatterer
-            //         && abs(channel_info[34].Get_peak_position(channel_info[34].Get_Zero_Level(GATE_BEG))-channel_info[32].Get_peak_position(channel_info[32].Get_Zero_Level(GATE_BEG))) > 10
+            //         && abs(channel_info[34].Get_time(channel_info[34].Get_Zero_Level(GATE_BEG))-channel_info[32].Get_time(channel_info[32].Get_Zero_Level(GATE_BEG))) > 10
             //         && channel_info[34].Get_Amplitude(channel_info[34].Get_Zero_Level(GATE_BEG), GATE_BEG, GATE_END) < 400
             // #endif
                 ) 
@@ -159,7 +159,7 @@ void Waveforms_calibration_nprocs(
                 if (gateIntegral > 4000
                 && channel_info[chiter].Get_Amplitude(GATE_BEG, Intermediate_gate) > 1000
                 && channel_info[chiter].Get_Amplitude(GATE_BEG, Intermediate_gate) < 60000
-                // && abs(channel_info[34].Get_peak_position(channel_info[34].Get_Zero_Level(GATE_BEG))-channel_info[32].Get_peak_position(channel_info[32].Get_Zero_Level(GATE_BEG))) > 10
+                // && abs(channel_info[34].Get_time(channel_info[34].Get_Zero_Level(GATE_BEG))-channel_info[32].Get_time(channel_info[32].Get_Zero_Level(GATE_BEG))) > 10
                 // && channel_info[34].Get_Amplitude(channel_info[34].Get_Zero_Level(GATE_BEG), GATE_BEG, GATE_END) < 400
                 ) 
                 {
@@ -217,15 +217,15 @@ void Waveforms_calibration_nprocs(
 
                 if (channel_info[channel_number].Get_Charge(GATE_BEG, GATE_END) > low_cut[channel_number]
                 && channel_info[channel_number].Get_Charge(GATE_BEG, GATE_END) < high_cut[channel_number]
-                //&& abs(channel_info[32].Get_peak_position(zero_level, GATE_BEG, GATE_END)-channel_info[33].Get_peak_position(zero_level, GATE_BEG, GATE_END)) < 2
-                && (channel_info[channel_number].Get_peak_position()-channel_info[sc_number].Get_peak_position()) > 0
-                && (channel_info[channel_number].Get_peak_position()-channel_info[sc_number].Get_peak_position()) < 14
+                //&& abs(channel_info[32].Get_time(zero_level, GATE_BEG, GATE_END)-channel_info[33].Get_time(zero_level, GATE_BEG, GATE_END)) < 2
+                && (channel_info[channel_number].Get_time()-channel_info[sc_number].Get_time()) > 0
+                && (channel_info[channel_number].Get_time()-channel_info[sc_number].Get_time()) < 14
                 && channel_info[channel_number].Get_Amplitude(GATE_BEG, GATE_END) < 60000
                 && channel_info[channel_number].Get_Amplitude(GATE_BEG, GATE_END) > 400
                 
-                //&& channel_info[sc_number].Get_peak_position(zero_level) < 31000
+                //&& channel_info[sc_number].Get_time(zero_level) < 31000
     #if UsedScatterer
-                && abs(channel_info[34].Get_peak_position()-channel_info[32].Get_peak_position()) > 10
+                && abs(channel_info[34].Get_time()-channel_info[32].Get_time()) > 10
                 && channel_info[34].Get_Amplitude(GATE_BEG, GATE_END) < 400
     #endif
                 )
@@ -292,9 +292,11 @@ void Waveforms_calibration_nprocs(
 
                 short_channel_info[channel_number].amp = channel_info[channel_number].Get_Amplitude(GATE_BEG, CH_GATE_END);//inv_amp;
 
-                short_channel_info[channel_number].peak_pos = 
-                channel_info[channel_number].Get_peak_position_gauss(short_channel_info[channel_number].amp, CH_GATE_END);
+                short_channel_info[channel_number].time = 
+                channel_info[channel_number].Get_time_gauss(short_channel_info[channel_number].amp, CH_GATE_END);
                 short_channel_info[channel_number].zl = zero_level;
+                short_channel_info[channel_number].II.end_amplitude = channel_info[channel_number].GetEndAmp();
+                short_channel_info[channel_number].II.signal_length = channel_info[channel_number].GetSLength();
 
                 diff_short_channel_info[channel_number].Initialize();
                 if ((channel_number == 34 || channel_number == 35) && channel_info[channel_number].wf_size != 0) 
