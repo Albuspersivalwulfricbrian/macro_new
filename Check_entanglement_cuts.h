@@ -1,7 +1,7 @@
 #ifndef CHECK_CUTS
 #define CHECK_CUTS
 #include "ChannelEntry.h"
-#include "TreeStructures.h"
+//#include "TreeStructures.h"
 namespace CUTS
 {
 
@@ -10,14 +10,14 @@ namespace CUTS
         Bool_t flag = kFALSE;
         if (entangled == kFALSE && short_channel_info[34].amp < 50000
             && short_channel_info[34].amp > 100
-            && (short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) < 250
-            && (short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 0)
+            && (short_channel_info[34].time - short_channel_info[32].time) < 250
+            && (short_channel_info[34].time - short_channel_info[32].time) > 0)
             flag = kTRUE;
 
         if (entangled == kTRUE &&
             short_channel_info[34].amp < 300 &&
-            ((short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) < 0 ||
-            (short_channel_info[34].peak_pos - short_channel_info[32].peak_pos) > 150)
+            ((short_channel_info[34].time - short_channel_info[32].time) < 0 ||
+            (short_channel_info[34].time - short_channel_info[32].time) > 150)
             )
             flag = kTRUE;
         return flag;
@@ -38,9 +38,9 @@ namespace CUTS
     {
         Bool_t flag = kFALSE;
         if (
-        short_channel_info[channel_number].peak_pos > 11
-        &&  short_channel_info[33].peak_pos > 11
-        &&  short_channel_info[32].peak_pos > 11) flag = kTRUE;
+        short_channel_info[channel_number].time > 11
+        &&  short_channel_info[33].time > 11
+        &&  short_channel_info[32].time > 11) flag = kTRUE;
         return flag;
     }
 
@@ -64,14 +64,14 @@ namespace CUTS
         }
         Bool_t flag = kFALSE;
         if (
-        short_channel_info[channel_number].peak_pos > 11//non-zero signal choosing
-        &&  short_channel_info[33].peak_pos > 11
-        &&  short_channel_info[32].peak_pos > 11//end
+        short_channel_info[channel_number].time > 11//non-zero signal choosing
+        &&  short_channel_info[33].time > 11
+        &&  short_channel_info[32].time > 11//end
 
-        && (short_channel_info[33].peak_pos - short_channel_info[32].peak_pos) < right_main_sc// choosing entangled pairs
-        && (short_channel_info[33].peak_pos - short_channel_info[32].peak_pos) > left_main_sc// choosing entangled pairs
-        && (short_channel_info[sc_number].peak_pos - short_channel_info[channel_number].peak_pos) > left_ch_sc // choosing coincidence with NaI counters
-        && (short_channel_info[sc_number].peak_pos- short_channel_info[channel_number].peak_pos) < right_ch_sc) {flag = kTRUE;}
+        && (short_channel_info[33].time - short_channel_info[32].time) < right_main_sc// choosing entangled pairs
+        && (short_channel_info[33].time - short_channel_info[32].time) > left_main_sc// choosing entangled pairs
+        && (short_channel_info[sc_number].time - short_channel_info[channel_number].time) > left_ch_sc // choosing coincidence with NaI counters
+        && (short_channel_info[sc_number].time- short_channel_info[channel_number].time) < right_ch_sc) {flag = kTRUE;}
         return flag;
     }
 

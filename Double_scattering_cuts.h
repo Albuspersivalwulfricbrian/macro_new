@@ -56,33 +56,51 @@ namespace CUTS
         return flag;
     }
 
-    // Bool_t Double_Decoherent_or_Decoherent_or_Entangled(short_energy_ChannelEntry *short_channel_info, TString state = "entangled")
-    // {
-    //     Bool_t flag = kFALSE;
-    //     if (state == kFALSE && short_channel_info[34]->amp < 60000
-    //         && short_channel_info[34]->amp > 100
-    //         && (short_channel_info[34]->time - short_channel_info[32]->time) < 350
-    //         && (short_channel_info[34]->time - short_channel_info[32]->time) > 150)
-    //         flag = kTRUE;
-
-    //     if (state == kTRUE &&
-    //         short_channel_info[34]->amp < 20 &&
-    //         ((short_channel_info[34]->time - short_channel_info[32]->time) < 50 ||
-    //         (short_channel_info[34]->time - short_channel_info[32]->time) > 500)
-    //         )
-    //         flag = kTRUE;
-
-            
-    //     return flag;
-    // }    
-    Bool_t diff_cuts(Short_t min_diff, TString state = "entangled")
+    template<int n> 
+    Bool_t EventTypeDeterminator(std::array<short_energy_ChannelEntry*, n> &short_channel_info, Short_t& EventType)
     {
         Bool_t flag = kFALSE;
-        if (state == "decoherent" && min_diff < -40)
-            flag = kTRUE;
+        if (isEntangled<36>(short_channel_info,"left"))
+        {
+            if (isEntangled<36>(short_channel_info,"right"))
+            {
+                EventType = 0;
+                flag = kTRUE;                
+            }
+            else if (isDecoherent<36>(short_channel_info,"right"))
+            {
+                EventType = 2;
+                flag = kTRUE;
+            }
+        }
+        else if (isDecoherent<36>(short_channel_info,"left"))
+        {
+            if (isEntangled<36>(short_channel_info,"right"))
+            {
+                EventType = 1;
+                flag = kTRUE;                
+            }
+            else if (isDecoherent<36>(short_channel_info,"right"))
+            {
+                EventType = 3;
+                flag = kTRUE;
+            }
+        }
+        return flag;
+    }
 
-        if (state == "entangled" && min_diff > -10)
-            flag = kTRUE;
+
+    //template<int n> 
+    Bool_t diff_cuts(std::array<diff_short_energy_ChannelEntry*, 36> diff_4_cut, Short_t EventType = -10)
+    {
+        Int_t entangled_cut = -10;
+        Int_t decoherent_cut = -40;
+        Bool_t flag = kFALSE;;
+        if (diff_4_cut[34]->min_diff < decoherent_cut && diff_4_cut[35]->min_diff < decoherent_cut && EventType == 3) flag = kTRUE;
+        if (diff_4_cut[34]->min_diff < decoherent_cut && diff_4_cut[35]->min_diff > entangled_cut && EventType == 1) flag = kTRUE;
+        if (diff_4_cut[34]->min_diff > entangled_cut && diff_4_cut[35]->min_diff < decoherent_cut && EventType == 2) flag = kTRUE;
+        if (diff_4_cut[34]->min_diff > entangled_cut && diff_4_cut[35]->min_diff > entangled_cut && EventType == 0) flag = kTRUE;
+
         return flag;
     }
 

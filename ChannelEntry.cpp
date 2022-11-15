@@ -250,6 +250,7 @@ using namespace std;
         EdepDet1 = 0;  
         DetNum0 = 0;
         DetNum1 = 0; 
+        EventType = -10;
         return 0;
     }
 
