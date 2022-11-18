@@ -94,7 +94,7 @@ void Create_mini_tree_short()
             }
         }
 
-        if (NumEvent%100000 == 0) cout << counter_1 << " " << counter_2 << endl;
+        if (NumEvent%100000 == 0) cout << counter_1 << " " << counter_2 << "\t" << NumEvent/calculate_Events_Number <<"%" << endl;
         EventType = -10;
         if((counter_1 == 1 && counter_2 == 1) && (counter_1 < 2 && counter_2 < 2))
         {        

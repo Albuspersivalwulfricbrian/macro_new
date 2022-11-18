@@ -18,28 +18,26 @@
 #include "like_ivashkin_wants_it.h"
 using namespace std;
 using namespace CUTS;
-#define entangled 0
-#define dedocerent 1
+// #define entangled 0
+// #define dedocerent 1
 #define UseDecoherent 0
-#define UseEntangled 1
-#define UseDoubleDecoherent 0
 #define UseNoCutG 1
 #define UseTimeCut 1
 #define DrawAllAngles 0
 
 
-void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/double_GAGG/")
+void MiniDST_analysis(TString source_path = "/home/doc/entanglement/double_GAGG/big_files/")
 {
     const Int_t module_angles = 8;
     const Int_t all_angles = module_angles*2;
 
-#if UseDecoherent
-    TString middle_path  = source_path + "decoh_mini_tree";
-#else
-    TString middle_path = source_path + "entangled_mini_tree";
-#endif
+    const Short_t EventType = 0;
+    const Int_t left_interaction = EventType%2;
+    const Int_t right_interaction = EventType/2;
+
+    TString middle_path = source_path + "MiniDST";
     mini_tree_nrg *short_tree = new mini_tree_nrg;
-    
+
     mini_tree_time *time_tree = new mini_tree_time;
     TFile *f = TFile::Open(middle_path+".root");
     TTree *MiniDST_tree = (TTree*)f->Get("Signals");
@@ -55,25 +53,25 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/double_GAG
     Int_t NumEvents[16][16] = {0};     
     Float_t angle_arr[16]  = {0.};
     Float_t angle_arr_err[16] = {0.};    
-    Float_t high_time_cut[33] = {0};
-    Float_t low_time_cut[33] = {0};
+    Float_t high_time_cut[34] = {0};
+    Float_t low_time_cut[34] = {0};
 
     for (Int_t i = 0; i <16; i++) angle_arr[i] = (float)i*22.5;
     /////////////////////////////
     //////////////////////////////
 
-    Float_t low_det0_cut = 180;
-    Float_t high_det0_cut = 300;
-    Float_t low_det1_cut = 180;
-    Float_t high_det1_cut = 300;
+    Float_t low_det0_cut[2] = {180,180};
+    Float_t high_det0_cut[2] = {300,300};
+    Float_t low_det1_cut[2] = {180,180};
+    Float_t high_det1_cut[2] = {300,300};
 
-    Float_t low_scat0_cut = 150;
-    Float_t high_scat0_cut = 300; 
+    Float_t low_scat0_cut[2] = {150,150};
+    Float_t high_scat0_cut[2] = {300,300}; 
     
-    Float_t low_scat1_cut = 180;
-    Float_t high_scat1_cut  = 300;
-    Float_t high_intermediate_cut = 60;
-    Float_t low_intermediate_cut = 2;
+    Float_t low_scat1_cut[2] = {180,180};
+    Float_t high_scat1_cut[2]  = {300,300};
+    Float_t high_intermediate_cut[2] = {100,100};
+    Float_t low_intermediate_cut[2] = {2,2};
 /////////////////////////////////
 ////////////////////////////////
 
@@ -82,7 +80,7 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/double_GAG
     canv_0->cd();
 
     #if UseDecoherent
-    TH2F *h2 = new TH2F("h2","h2", 75,0,400,75,0,150); h2->GetZaxis()->SetRangeUser(5,70);
+    TH2F *h2 = new TH2F("h2","h2", 75,0,400,75,0,150); //h2->GetZaxis()->SetRangeUser(5,70);
     MiniDST_tree->Draw("MiniTree.EdepIntermediate0:MiniTree.EdepDet0 >> h2","TimeTree.TimeIntermediate0-TimeScat0 < 75 && TimeTree.TimeIntermediate0-TimeScat0 > 50", "colz");
         //MiniDST_tree->Draw("MiniTree.EdepDet0:MiniTree.EdepScat0 >> (75,0,500,75,0,500)","", "colz");
 
@@ -120,81 +118,76 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/double_GAG
     Int_t nbins = 125;
     Int_t left_bin = 0;
     Int_t right_bin = 450;
-    TH1F *det0 = new TH1F("det0","det0", nbins, left_bin, right_bin);
-    TH1F *det1 = new TH1F("det1","det1", nbins, left_bin, right_bin);
-    TH1F *scat0 = new TH1F("scat0","scat0", nbins, left_bin, right_bin);
-    TH1F *scat1 = new TH1F("scat1","scat1", nbins, left_bin, right_bin);
-    TCanvas *new_canv = new TCanvas("new", "new");
-    MiniDST_tree->Draw("MiniTree.EdepDet0 >> det0"
 
-    #if UseDecoherent
+    for (int interaction = 0; interaction <=1; interaction++)
+    {
+        TH1F *det0 = new TH1F("det0","det0", nbins, left_bin, right_bin);
+        TH1F *det1 = new TH1F("det1","det1", nbins, left_bin, right_bin);
+        TH1F *scat0 = new TH1F("scat0","scat0", nbins, left_bin, right_bin);
+        TH1F *scat1 = new TH1F("scat1","scat1", nbins, left_bin, right_bin);
+        TCanvas *new_canv = new TCanvas("new", "new");
 
-    ,Form("MiniTree.EdepIntermediate0 < %f && MiniTree.EdepIntermediate0 > %f", high_intermediate_cut, low_intermediate_cut)
-    #endif        
-    ); 
-    double_gauss_fit(det0, low_det0_cut, high_det0_cut);
-    det0->Write();
-    new_canv->SaveAs(result_path+".pdf(",".pdf");
-    new_canv->Clear();
+        MiniDST_tree->Draw("MiniTree.EdepDet0 >> det0",Form("MiniTree.EventType == %i",interaction)); 
+        double_gauss_fit(det0, low_det0_cut[interaction], high_det0_cut[interaction]);
+        det0->Write();
+        new_canv->SaveAs(result_path+".pdf(",".pdf");
+        new_canv->Clear();
 
-    MiniDST_tree->Draw("MiniTree.EdepDet1 >> det1"
-    #if UseDecoherent
+        MiniDST_tree->Draw("MiniTree.EdepDet1 >> det1", Form("MiniTree.EVentType == %i", 2*interaction));
+        double_gauss_fit(det1, low_det1_cut[interaction], high_det1_cut[interaction]);
+        det1->Write();
+        new_canv->SaveAs(result_path+".pdf(",".pdf");
+        new_canv->Clear();
 
-    ,Form("MiniTree.EdepIntermediate0 < %f && MiniTree.EdepIntermediate0 > %f", high_intermediate_cut, low_intermediate_cut)
-    #endif        
-    );
-    double_gauss_fit(det1, low_det1_cut, high_det1_cut);
-    det1->Write();
-    new_canv->SaveAs(result_path+".pdf(",".pdf");
-    new_canv->Clear();
+        MiniDST_tree->Draw("MiniTree.EdepScat1 >> scat1", 
+        Form("MiniTree.EdepDet1 < %f && MiniTree.EdepDet1 > %f && MiniTree.EventType == %i"
+        , high_det1_cut[interaction], low_det1_cut[interaction], 2*interaction));
+        double_gauss_fit(scat1, low_scat1_cut[interaction], high_scat1_cut[interaction]);
+        scat1->Write();
+        new_canv->SaveAs(result_path+".pdf(",".pdf");
+        new_canv->Clear();
 
-    MiniDST_tree->Draw("MiniTree.EdepScat1 >> scat1", 
-    Form("MiniTree.EdepDet1 < %f && MiniTree.EdepDet1 > %f", high_det1_cut, low_det1_cut));
-    double_gauss_fit(scat1, low_scat1_cut, high_scat1_cut);
-    scat1->Write();
-    new_canv->SaveAs(result_path+".pdf(",".pdf");
-    new_canv->Clear();
+        MiniDST_tree->Draw("MiniTree.EdepScat0 >> scat0", 
+        Form("MiniTree.EdepDet0 < %f && MiniTree.EdepDet0 > %f && MiniTree.EventType == %i"
+        , high_det0_cut[interaction], low_det0_cut[interaction], interaction));
+        double_gauss_fit(scat0, low_scat0_cut[interaction], high_scat0_cut[interaction]);
+        scat0->Write();
+        new_canv->SaveAs(result_path+".pdf(",".pdf");
+        new_canv->Clear();
 
-    MiniDST_tree->Draw("MiniTree.EdepScat0 >> scat0", 
-    Form("MiniTree.EdepDet0 < %f && MiniTree.EdepDet0 > %f" 
-    #if UseDecoherent
-    "&& MiniTree.EdepIntermediate0 < %f && MiniTree.EdepIntermediate0 > %f"
-    #endif
-    , high_det0_cut, low_det0_cut 
-    #if UseDecoherent
-    ,high_intermediate_cut, low_intermediate_cut
-    #endif
-    ));
-    double_gauss_fit(scat0, low_scat0_cut, high_scat0_cut);
-    scat0->Write();
-    new_canv->SaveAs(result_path+".pdf(",".pdf");
-    new_canv->Clear();
-
-    delete det0;
-    delete det1;
-    delete scat0;
-    delete scat1;
+        delete det0;
+        delete det1;
+        delete scat0;
+        delete scat1;
+    }
 #if UseTimeCut
    ////Drawing_time_spectra
-        TH1F *hist_time = new TH1F("hist_time","hist_time", 1201,-600,600);
+        TH1F *hist_time;
         //TCanvas *time = new TCanvas("time", "time");
     for (Int_t chnum = 0; chnum < 16; chnum++)
     {
-        TH1F *hist_time = new TH1F("hist_time","hist_time", 1201,-600,600);
+        hist_time = new TH1F("hist_time","hist_time", 1201,-600,600);
         MiniDST_tree->Draw("TimeTree.TimeDet0-TimeScat0 >> hist_time", 
         Form("MiniTree.DetNum0 == %i",chnum));
         double_gauss_fit(hist_time, low_time_cut[chnum], high_time_cut[chnum],1.5,1.5);
+        delete hist_time;
     }    
     for (Int_t chnum = 16; chnum < 32; chnum++)
     {
-        TH1F *hist_time = new TH1F("hist_time","hist_time", 1201,-600,600);
+        hist_time = new TH1F("hist_time","hist_time", 1201,-600,600);
         MiniDST_tree->Draw("TimeTree.TimeDet1-TimeScat1 >> hist_time", 
         Form("MiniTree.DetNum1 == %i",chnum));
         double_gauss_fit(hist_time, low_time_cut[chnum], high_time_cut[chnum],1.5,1.5);
+        delete hist_time;
     }  
     hist_time = new TH1F("hist_time","hist_time", 1201,-600,600);
-    MiniDST_tree->Draw("TimeTree.TimeIntermediate0-TimeScat0 >> hist_time","MiniTree.EdepIntermediate0 > 2 && EdepIntermediate0 < 40");
+    MiniDST_tree->Draw("TimeTree.TimeIntermediate0-TimeScat0 >> hist_time",
+    "MiniTree.EdepIntermediate0 > 2 && EdepIntermediate0 < 60 && EventType == 1");
     double_gauss_fit(hist_time, low_time_cut[32], high_time_cut[32],1.5,1.5);
+
+    MiniDST_tree->Draw("TimeTree.TimeIntermediate1-TimeScat1 >> hist_time",
+    "MiniTree.EdepIntermediate1 > 2 && EdepIntermediate0 < 60 && EventType == 2");
+    double_gauss_fit(hist_time, low_time_cut[33], high_time_cut[33],1.5,1.5);
 #endif
 /////////////////////Selecting coicidences for all counters
     for (Int_t NumEvent = 0; NumEvent < MiniDST_tree->GetEntries(); NumEvent++)
@@ -205,58 +198,61 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/double_GAG
         //cout << num0 << " "<<num1<<endl;
 
         if(
-            short_tree->EdepDet1 > low_det1_cut
-        && short_tree->EdepDet1 < high_det1_cut
-        && short_tree->EdepScat1 > low_scat1_cut
-        && short_tree->EdepScat1 < high_scat1_cut 
-        && 
-        short_tree->EdepScat0 +short_tree->EdepDet0 + short_tree->EdepIntermediate0 > 410
+//total energy cuts
+        short_tree->EventType == EventType
+        && short_tree->EdepScat0 +short_tree->EdepDet0 + short_tree->EdepIntermediate0 > 410
         && short_tree->EdepScat0 +short_tree->EdepDet0 + short_tree->EdepIntermediate0 < 600
         && short_tree->EdepScat1 +short_tree->EdepDet1 + short_tree->EdepIntermediate1 > 410
-        && short_tree->EdepScat1 +short_tree->EdepDet1 + short_tree->EdepIntermediate1 < 600        
-
+        && short_tree->EdepScat1 +short_tree->EdepDet1 + short_tree->EdepIntermediate1 < 600   
+        && short_tree->EdepScat1 > low_scat1_cut[0]
+        && short_tree->EdepScat1 < high_scat1_cut[0]
+        && short_tree->EdepScat0 > low_scat0_cut[0]
+        && short_tree->EdepScat0 < high_scat0_cut[0]
 #if UseNoCutG
-        && short_tree->EdepDet0 > low_det0_cut
-        && short_tree->EdepDet0 < high_det0_cut        
-        && short_tree->EdepScat0 > low_scat0_cut
-        && short_tree->EdepScat0 < high_scat0_cut
+        &&  short_tree->EdepDet1 > low_det1_cut[0]
+        && short_tree->EdepDet1 < high_det1_cut[0]      
+        && short_tree->EdepDet0 > low_det0_cut[0]
+        && short_tree->EdepDet0 < high_det0_cut[0]        
 #else
         && (
         (short_tree->EdepDet0 < 320
         && short_tree->EdepDet0 > 200
-        && short_tree->EdepIntermediate0 > 3
+        && short_tree->EdepIntermediate0 > 1
         && short_tree->EdepIntermediate0 < 100)
-        &&
+        ||
         (short_tree->EdepDet1 < 320
         && short_tree->EdepDet1 > 200
-        && short_tree->EdepIntermediate1 > 3
+        && short_tree->EdepIntermediate1 > 1
         && short_tree->EdepIntermediate1 < 100)
         )        
-
+        // && short_tree->EdepIntermediate0 < high_intermediate_cut
+        // && short_tree->EdepIntermediate0 > low_intermediate_cut          
         //&& cutg->IsInside(short_tree->EdepDet0,short_tree->EdepIntermediate0)
-        
 #endif 
-
         #if UseTimeCut
         && time_tree->TimeScat1-time_tree->TimeScat0 > -6
-        && time_tree->TimeScat1-time_tree->TimeScat0 < 6        
+        && time_tree->TimeScat1-time_tree->TimeScat0 < 6
         && time_tree->TimeDet0-time_tree->TimeScat0 > low_time_cut[num0]
         && time_tree->TimeDet1-time_tree->TimeScat1 > low_time_cut[num1]
         && time_tree->TimeDet0-time_tree->TimeScat0 < high_time_cut[num0]
         && time_tree->TimeDet1-time_tree->TimeScat1 < high_time_cut[num1]
         #endif
 
-#if UseDecoherent
-        // && short_tree->EdepIntermediate0 < high_intermediate_cut
-        // && short_tree->EdepIntermediate0 > low_intermediate_cut  
         #if UseTimeCut         
-        && time_tree->TimeIntermediate0 - time_tree->TimeScat0 < high_time_cut[32]
+        && ((time_tree->TimeIntermediate0 - time_tree->TimeScat0 < high_time_cut[32]
         && time_tree->TimeIntermediate0 - time_tree->TimeScat0 > low_time_cut[32]
+        && (short_tree->EventType == 1 || short_tree->EventType == 3) 
+
+        && time_tree->TimeIntermediate1 - time_tree->TimeScat1 < high_time_cut[33]
+        && time_tree->TimeIntermediate1 - time_tree->TimeScat1 > low_time_cut[33]
+        && (short_tree->EventType == 2 || short_tree->EventType == 3))
+
+        || short_tree->EventType == 0)
         #endif
-#endif
         && num0 > -1 && num1 > -1)
             NumEvents[num0][num1-16] +=1;
     }
+    
     /////////////////////Calculate coincidences for ratio
 
     for (Int_t channel_number = 0; channel_number < 16; channel_number++)
@@ -350,7 +346,7 @@ void MiniDST_analysis_1(TString source_path = "/home/doc/entanglement/double_GAG
     global_gr_CHSH_all->Write();
 #endif
     global_canvas_CHSH->SaveAs(result_path+".pdf",".pdf");
-  
+
    //////////////////////// Draw E_coeffs
 
     TCanvas *E_canv = new TCanvas ( "global_E", "global_E");

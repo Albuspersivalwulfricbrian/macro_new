@@ -82,7 +82,7 @@ struct mini_tree_nrg
     Float_t EdepDet1;  
     Short_t DetNum0;
     Short_t DetNum1;
-    Short_t EventType; 
+    Short_t z; 
 
     // static TString GetBrName();
     // TBranch* CreateBranches(TTree *tree);
