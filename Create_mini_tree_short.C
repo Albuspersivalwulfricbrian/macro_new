@@ -36,7 +36,7 @@ void Create_mini_tree_short()
 
 ///////////////////////////////////////////////
     TChain *PMT_tree = new TChain;
-	PMT_tree->AddFile( (source_path + "calibrated_time_0.root" + "/adc64_data").Data() );
+	PMT_tree->AddFile( (source_path + "calibrated_time.root" + "/adc64_data").Data() );
 ///////////////////////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////
     const Int_t calculate_Events_Number = PMT_tree->GetEntries()/events_divider;
     Int_t Events_for_cuts = calculate_Events_Number/1;
@@ -94,7 +94,7 @@ void Create_mini_tree_short()
             }
         }
 
-        if (NumEvent%100000 == 0) cout << counter_1 << " " << counter_2 << "\t" << NumEvent/calculate_Events_Number <<"%" << endl;
+        if (NumEvent%100000 == 0) cout << counter_1 << " " << counter_2 << "\t" << (float)NumEvent/(float)calculate_Events_Number*100. <<"%" << endl;
         EventType = -10;
         if((counter_1 == 1 && counter_2 == 1) && (counter_1 < 2 && counter_2 < 2))
         {        

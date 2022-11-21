@@ -22,11 +22,11 @@ using namespace CUTS;
 // #define dedocerent 1
 #define UseDecoherent 0
 #define UseNoCutG 1
-#define UseTimeCut 1
+#define UseTimeCut 0
 #define DrawAllAngles 0
 
 
-void MiniDST_analysis(TString source_path = "/home/doc/entanglement/double_GAGG/big_files/")
+void MiniDST_analysis(TString source_path = "/home/doc/entanglement/double_GAGG/")
 {
     const Int_t module_angles = 8;
     const Int_t all_angles = module_angles*2;
@@ -133,7 +133,7 @@ void MiniDST_analysis(TString source_path = "/home/doc/entanglement/double_GAGG/
         new_canv->SaveAs(result_path+".pdf(",".pdf");
         new_canv->Clear();
 
-        MiniDST_tree->Draw("MiniTree.EdepDet1 >> det1", Form("MiniTree.EVentType == %i", 2*interaction));
+        MiniDST_tree->Draw("MiniTree.EdepDet1 >> det1", Form("MiniTree.EventType == %i", 2*interaction));
         double_gauss_fit(det1, low_det1_cut[interaction], high_det1_cut[interaction]);
         det1->Write();
         new_canv->SaveAs(result_path+".pdf(",".pdf");
@@ -204,15 +204,16 @@ void MiniDST_analysis(TString source_path = "/home/doc/entanglement/double_GAGG/
         && short_tree->EdepScat0 +short_tree->EdepDet0 + short_tree->EdepIntermediate0 < 600
         && short_tree->EdepScat1 +short_tree->EdepDet1 + short_tree->EdepIntermediate1 > 410
         && short_tree->EdepScat1 +short_tree->EdepDet1 + short_tree->EdepIntermediate1 < 600   
-        && short_tree->EdepScat1 > low_scat1_cut[0]
-        && short_tree->EdepScat1 < high_scat1_cut[0]
-        && short_tree->EdepScat0 > low_scat0_cut[0]
-        && short_tree->EdepScat0 < high_scat0_cut[0]
+        // && short_tree->EdepScat1 > low_scat1_cut[right_interaction]
+        // && short_tree->EdepScat1 < high_scat1_cut[right_interaction]
+        // && short_tree->EdepScat0 > low_scat0_cut[left_interaction]
+        // && short_tree->EdepScat0 < high_scat0_cut[left_interaction]
 #if UseNoCutG
-        &&  short_tree->EdepDet1 > low_det1_cut[0]
-        && short_tree->EdepDet1 < high_det1_cut[0]      
-        && short_tree->EdepDet0 > low_det0_cut[0]
-        && short_tree->EdepDet0 < high_det0_cut[0]        
+
+        &&  short_tree->EdepDet1 > low_det1_cut[right_interaction]
+        && short_tree->EdepDet1 < high_det1_cut[right_interaction]      
+        && short_tree->EdepDet0 > low_det0_cut[left_interaction]
+        && short_tree->EdepDet0 < high_det0_cut[left_interaction]        
 #else
         && (
         (short_tree->EdepDet0 < 320
@@ -236,18 +237,16 @@ void MiniDST_analysis(TString source_path = "/home/doc/entanglement/double_GAGG/
         && time_tree->TimeDet1-time_tree->TimeScat1 > low_time_cut[num1]
         && time_tree->TimeDet0-time_tree->TimeScat0 < high_time_cut[num0]
         && time_tree->TimeDet1-time_tree->TimeScat1 < high_time_cut[num1]
-        #endif
-
-        #if UseTimeCut         
+       
         && ((time_tree->TimeIntermediate0 - time_tree->TimeScat0 < high_time_cut[32]
         && time_tree->TimeIntermediate0 - time_tree->TimeScat0 > low_time_cut[32]
-        && (short_tree->EventType == 1 || short_tree->EventType == 3) 
-
-        && time_tree->TimeIntermediate1 - time_tree->TimeScat1 < high_time_cut[33]
+        && (short_tree->EventType == 1 || short_tree->EventType == 3)) 
+        ||
+         (time_tree->TimeIntermediate1 - time_tree->TimeScat1 < high_time_cut[33]
         && time_tree->TimeIntermediate1 - time_tree->TimeScat1 > low_time_cut[33]
         && (short_tree->EventType == 2 || short_tree->EventType == 3))
-
-        || short_tree->EventType == 0)
+        || 
+        short_tree->EventType == 0)
         #endif
         && num0 > -1 && num1 > -1)
             NumEvents[num0][num1-16] +=1;
